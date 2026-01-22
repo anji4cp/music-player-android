@@ -58,11 +58,3 @@ The app requires the following permissions:
   - `READ_EXTERNAL_STORAGE`
 
 These permissions are used **only** to read local audio files.
-
----
-
-## 🚀 Getting Started
-
-### 1. Clone Repository
-```bash
-git clone https://github.com/USERNAME/music-player-android.git
