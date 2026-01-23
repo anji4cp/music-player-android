@@ -29,7 +29,7 @@ public class LibraryFragment extends Fragment {
 
     private RecyclerView recyclerView;
     private SongAdapter adapter;
-    private List<Song> songList = new ArrayList<>();
+    private final List<Song> songList = new ArrayList<>();
 
     private PlayerManager playerManager;
 
@@ -52,7 +52,11 @@ public class LibraryFragment extends Fragment {
         return view;
     }
 
+    // =========================
+    // PERMISSION & LOAD
+    // =========================
     private void checkPermissionAndLoad() {
+
         String permission = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                 ? Manifest.permission.READ_MEDIA_AUDIO
                 : Manifest.permission.READ_EXTERNAL_STORAGE;
@@ -65,7 +69,11 @@ public class LibraryFragment extends Fragment {
         }
     }
 
+    // =========================
+    // LOAD SONGS
+    // =========================
     private void loadSongs() {
+
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
 
         String[] projection = {
@@ -95,7 +103,6 @@ public class LibraryFragment extends Fragment {
                 String path = cursor.getString(2);
                 long duration = cursor.getLong(3);
 
-                // 🔥 Ambil album art
                 byte[] albumArt = getAlbumArt(path);
 
                 songList.add(new Song(title, artist, path, duration, albumArt));
@@ -105,25 +112,27 @@ public class LibraryFragment extends Fragment {
 
         playerManager.setSongList(songList);
 
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).onSongsReady();
+        }
+
         adapter = new SongAdapter(songList, position -> {
-            try {
-                playerManager.playSong(position);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            playerManager.playSong(position);
         });
 
         recyclerView.setAdapter(adapter);
 
         if (songList.isEmpty()) {
-            Toast.makeText(requireContext(),
+            Toast.makeText(
+                    requireContext(),
                     "Tidak ada lagu ditemukan",
-                    Toast.LENGTH_LONG).show();
+                    Toast.LENGTH_LONG
+            ).show();
         }
     }
 
     // =========================
-    // GET ALBUM ART
+    // ALBUM ART
     // =========================
     private byte[] getAlbumArt(String path) {
         try {

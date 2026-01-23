@@ -1,24 +1,24 @@
 package com.anji4cp.musicplayer;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     // Mini player
     private LinearLayout miniPlayer;
     private TextView tvMiniTitle;
-    private Button btnMiniPlayPause;
+    private ImageButton btnMiniPlayPause;
     private SeekBar miniSeekBar;
 
     private PlayerManager playerManager;
@@ -41,8 +41,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        requestNotificationPermission();
-
         bottomNavigation = findViewById(R.id.bottomNavigation);
 
         miniPlayer = findViewById(R.id.miniPlayer);
@@ -52,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
         playerManager = PlayerManager.getInstance(this);
 
+        requestNotificationPermission();
         setupMiniPlayer();
 
         // Fragment awal
@@ -81,13 +80,13 @@ public class MainActivity extends AppCompatActivity {
             loadFragment(fragment, forward);
             return true;
         });
-
     }
 
+    // =========================
+    // PERMISSION
+    // =========================
     private void requestNotificationPermission() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
@@ -101,7 +100,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
 
     // =========================
     // LOAD FRAGMENT (SATU-SATUNYA PINTU)
@@ -141,6 +139,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void onSongsReady() {
+
+        playerManager.restoreLastPlayback();
+
+        // Kalau Home sedang aktif → refresh
+        Fragment f = getSupportFragmentManager()
+                .findFragmentById(R.id.fragmentContainer);
+
+        if (f instanceof HomeFragment) {
+            ((HomeFragment) f).refreshUI();
+        }
+    }
+
+
     // =========================
     // MINI PLAYER
     // =========================
@@ -153,37 +165,52 @@ public class MainActivity extends AppCompatActivity {
 
         miniSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && playerManager.getMediaPlayer() != null) {
-                    playerManager.getMediaPlayer().seekTo(progress);
-                }
+            public void onProgressChanged(
+                    SeekBar seekBar,
+                    int progress,
+                    boolean fromUser) {
+
+                if (!fromUser) return;
+                if (!playerManager.isPlayerReady()) return;
+
+                playerManager.seekTo(progress);
             }
+
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        // 👉 TAP MINI PLAYER → PINDAH TAB SAJA (TANPA LOAD FRAGMENT MANUAL)
-        miniPlayer.setOnClickListener(v -> {
-            bottomNavigation.setSelectedItemId(R.id.navigation_home);
-        });
+        // TAP MINI PLAYER → PINDAH KE HOME
+        miniPlayer.setOnClickListener(v ->
+                bottomNavigation.setSelectedItemId(R.id.navigation_home)
+        );
     }
 
     private void updateMiniUI() {
+
         Song song = playerManager.getCurrentSong();
 
-        if (song != null) {
-            tvMiniTitle.setText(song.getTitle() + " - " + song.getArtist());
-            miniSeekBar.setMax(playerManager.getDuration());
-            updateMiniSeekBar();
-            updateMiniPlayButton();
+        if (song == null) {
+            tvMiniTitle.setText("");
+            miniSeekBar.setProgress(0);
+            return;
         }
+
+        tvMiniTitle.setText(song.getTitle() + " - " + song.getArtist());
+        miniSeekBar.setMax(playerManager.getDuration());
+
+        updateMiniPlayButton();
+        updateMiniSeekBar();
     }
 
     private void updateMiniPlayButton() {
-        btnMiniPlayPause.setText(
-                playerManager.isPlaying() ? "⏸" : "▶"
+        btnMiniPlayPause.setImageResource(
+                playerManager.isPlaying()
+                        ? R.drawable.ic_pause
+                        : R.drawable.ic_play
         );
     }
+
 
     private void updateMiniSeekBar() {
         miniSeekBar.setProgress(playerManager.getCurrentPosition());
@@ -192,4 +219,31 @@ public class MainActivity extends AppCompatActivity {
             handler.postDelayed(this::updateMiniSeekBar, 1000);
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (playerManager.getCurrentSong() != null) {
+            updateMiniUI();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (playerManager.isPlayerReady()) {
+            playerManager.saveCurrentPosition();
+        }
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // ❌ JANGAN stop MediaPlayer
+        // ✔ BIARKAN PLAYER STATE TERSIMPAN
+    }
+
 }

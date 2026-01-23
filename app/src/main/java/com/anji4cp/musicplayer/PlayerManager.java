@@ -5,12 +5,14 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 
 import androidx.core.app.NotificationCompat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class PlayerManager {
 
@@ -23,10 +25,28 @@ public class PlayerManager {
     private int currentIndex = -1;
     private Song currentSong;
 
-    private static final int NOTIFICATION_ID = 1;
+    // =========================
+    // PLAY MODE
+    // =========================
+    public static final int PLAY_MODE_NORMAL = 0;
+    public static final int PLAY_MODE_SHUFFLE = 1;
+    public static final int PLAY_MODE_REPEAT_ONE = 2;
+    private int playMode = PLAY_MODE_NORMAL;
+    private boolean restoredOnce = false;
+
 
     // =========================
-    // EQUALIZER STATE (GLOBAL)
+    // PERSIST STATE
+    // =========================
+    private static final String PREF_PLAYER = "player_state";
+    private static final String KEY_LAST_INDEX = "last_index";
+    private static final String KEY_LAST_POSITION = "last_position";
+    private static final String KEY_PLAY_MODE = "play_mode";
+
+    private SharedPreferences prefs;
+
+    // =========================
+    // EQUALIZER
     // =========================
     private android.media.audiofx.Equalizer equalizer;
     private short[] bandLevels;
@@ -34,10 +54,20 @@ public class PlayerManager {
     private short maxEQ;
     private int currentPreset = -1;
 
+    private static final int NOTIFICATION_ID = 1;
+
     private PlayerManager(Context context) {
         this.context = context.getApplicationContext();
         NotificationUtils.createChannel(this.context);
+
         mediaPlayer = new MediaPlayer();
+
+        prefs = this.context.getSharedPreferences(
+                PREF_PLAYER,
+                Context.MODE_PRIVATE
+        );
+
+        playMode = prefs.getInt(KEY_PLAY_MODE, PLAY_MODE_NORMAL);
     }
 
     public static PlayerManager getInstance(Context context) {
@@ -45,10 +75,6 @@ public class PlayerManager {
             instance = new PlayerManager(context);
         }
         return instance;
-    }
-
-    public MediaPlayer getMediaPlayer() {
-        return mediaPlayer;
     }
 
     // =========================
@@ -74,14 +100,156 @@ public class PlayerManager {
         return mediaPlayer != null ? mediaPlayer.getCurrentPosition() : 0;
     }
 
+    public MediaPlayer getMediaPlayer() {
+        return mediaPlayer;
+    }
+
+    public boolean isPlayerReady() {
+        return mediaPlayer != null
+                && currentSong != null
+                && mediaPlayer.getAudioSessionId() != -1;
+    }
+
     // =========================
-    // EQUALIZER (INIT SEKALI)
+    // PLAY MODE
+    // =========================
+    public void setPlayMode(int mode) {
+        playMode = mode;
+        prefs.edit().putInt(KEY_PLAY_MODE, playMode).apply();
+    }
+
+    public int getPlayMode() {
+        return playMode;
+    }
+
+    // =========================
+    // PLAY CONTROL (OVERLOAD)
+    // =========================
+    public void playSong(int index) {
+        playSong(index, false);
+    }
+
+    public void playSong(int index, boolean restoring) {
+        if (index < 0 || index >= songList.size()) return;
+
+        currentIndex = index;
+        currentSong = songList.get(index);
+
+        try {
+            mediaPlayer.reset();
+            mediaPlayer.setDataSource(currentSong.getPath());
+            mediaPlayer.prepare();
+
+            if (!restoring) {
+                mediaPlayer.start();
+            }
+
+            prefs.edit()
+                    .putInt(KEY_LAST_INDEX, currentIndex)
+                    .apply();
+
+            releaseEqualizer();
+            initEqualizer();
+
+            mediaPlayer.setOnCompletionListener(mp -> handleSongCompletion());
+
+            showNotification(
+                    currentSong.getTitle(),
+                    currentSong.getArtist(),
+                    !restoring
+            );
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void togglePlayPause() {
+        if (currentSong == null) return;
+
+        if (mediaPlayer.isPlaying()) {
+            saveCurrentPosition();
+            mediaPlayer.pause();
+            showNotification(currentSong.getTitle(), currentSong.getArtist(), false);
+        } else {
+            mediaPlayer.start();
+            showNotification(currentSong.getTitle(), currentSong.getArtist(), true);
+        }
+    }
+
+    public void next() {
+        if (songList.isEmpty()) return;
+        playSong((currentIndex + 1) % songList.size());
+    }
+
+    public void previous() {
+        if (songList.isEmpty()) return;
+        playSong((currentIndex - 1 + songList.size()) % songList.size());
+    }
+
+    private void playRandom() {
+        if (songList.isEmpty()) return;
+
+        int random;
+        do {
+            random = new Random().nextInt(songList.size());
+        } while (random == currentIndex && songList.size() > 1);
+
+        playSong(random);
+    }
+
+    private void handleSongCompletion() {
+        if (playMode == PLAY_MODE_REPEAT_ONE) {
+            playSong(currentIndex);
+        } else if (playMode == PLAY_MODE_SHUFFLE) {
+            playRandom();
+        } else {
+            next();
+        }
+    }
+
+    public void seekTo(int position) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seekTo(position);
+        }
+    }
+
+    // =========================
+    // RESTORE LAST PLAYBACK
+    // =========================
+    public void restoreLastPlayback() {
+
+        if (restoredOnce) return;
+        restoredOnce = true;
+
+        int index = prefs.getInt(KEY_LAST_INDEX, -1);
+        int position = prefs.getInt(KEY_LAST_POSITION, 0);
+        playMode = prefs.getInt(KEY_PLAY_MODE, PLAY_MODE_NORMAL);
+
+        if (index >= 0 && index < songList.size()) {
+            playSong(index, true);
+            mediaPlayer.seekTo(position);
+        }
+    }
+
+    public boolean hasRestored() {
+        return currentSong != null;
+    }
+
+
+    public void saveCurrentPosition() {
+        if (mediaPlayer != null) {
+            prefs.edit()
+                    .putInt(KEY_LAST_POSITION, mediaPlayer.getCurrentPosition())
+                    .apply();
+        }
+    }
+
+    // =========================
+    // EQUALIZER
     // =========================
     public void initEqualizer() {
-
-        if (mediaPlayer == null) return;
-
-        if (equalizer != null) return;
+        if (mediaPlayer == null || equalizer != null) return;
 
         equalizer = new android.media.audiofx.Equalizer(
                 0,
@@ -100,28 +268,7 @@ public class PlayerManager {
         }
     }
 
-    public short getMinEQ() {
-        return minEQ;
-    }
-
-    public short getMaxEQ() {
-        return maxEQ;
-    }
-
-    public void setBandLevel(short band, short level) {
-
-        if (equalizer == null || bandLevels == null) return;
-
-        equalizer.setBandLevel(band, level);
-        bandLevels[band] = level;
-    }
-
-    public short getBandLevel(short band) {
-        return bandLevels != null ? bandLevels[band] : 0;
-    }
-
     public void applyPreset(short preset) {
-
         if (equalizer == null) return;
 
         equalizer.usePreset(preset);
@@ -132,75 +279,24 @@ public class PlayerManager {
         }
     }
 
-    public int getCurrentPreset() {
-        return currentPreset;
+    public short getMinEQ() { return minEQ; }
+    public short getMaxEQ() { return maxEQ; }
+
+    public void setBandLevel(short band, short level) {
+        if (equalizer == null) return;
+        equalizer.setBandLevel(band, level);
+        bandLevels[band] = level;
     }
 
-    // =========================
-    // PLAY CONTROL
-    // =========================
-    public void playSong(int index) {
-        if (index < 0 || index >= songList.size()) return;
+    public short getBandLevel(short band) {
+        return bandLevels != null ? bandLevels[band] : 0;
+    }
 
-        currentIndex = index;
-        currentSong = songList.get(index);
-
-        try {
-            mediaPlayer.reset();
-            mediaPlayer.setDataSource(currentSong.getPath());
-            mediaPlayer.prepare();
-            mediaPlayer.start();
-
-            // 🔒 PASTIKAN AUDIO SESSION SUDAH VALID
-            releaseEqualizer();
-            initEqualizer();
-
-
-            showNotification(
-                    currentSong.getTitle(),
-                    currentSong.getArtist(),
-                    true
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
+    private void releaseEqualizer() {
+        if (equalizer != null) {
+            equalizer.release();
+            equalizer = null;
         }
-    }
-
-    public void togglePlayPause() {
-        if (currentSong == null) return;
-
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-            showNotification(
-                    currentSong.getTitle(),
-                    currentSong.getArtist(),
-                    false
-            );
-        } else {
-            mediaPlayer.start();
-            showNotification(
-                    currentSong.getTitle(),
-                    currentSong.getArtist(),
-                    true
-            );
-        }
-    }
-
-    public void next() {
-        if (songList.isEmpty()) return;
-        playSong((currentIndex + 1) % songList.size());
-    }
-
-    public void previous() {
-        if (songList.isEmpty()) return;
-        playSong((currentIndex - 1 + songList.size()) % songList.size());
-    }
-
-    public boolean isPlayerReady() {
-        return mediaPlayer != null
-                && currentSong != null
-                && mediaPlayer.getAudioSessionId() != -1;
     }
 
     // =========================
@@ -247,9 +343,10 @@ public class PlayerManager {
                         .setContentTitle(title)
                         .setContentText(artist)
                         .setContentIntent(contentIntent)
+                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                         .setOngoing(isPlaying)
                         .addAction(android.R.drawable.ic_media_previous, "Prev", prevPending)
-                        .addAction(playPauseIcon, "PlayPause", playPausePending)
+                        .addAction(playPauseIcon, "Play", playPausePending)
                         .addAction(android.R.drawable.ic_media_next, "Next", nextPending)
                         .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                                 .setShowActionsInCompactView(0, 1, 2))
@@ -263,15 +360,22 @@ public class PlayerManager {
         }
     }
 
-    // =========================
-    // CLEANUP
-    // =========================
-    private void releaseEqualizer() {
-        if (equalizer != null) {
-            equalizer.release();
-            equalizer = null;
+    public void stopPlaybackAndNotification() {
+
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            saveCurrentPosition();
+            mediaPlayer.pause();
+        }
+
+        NotificationManager manager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (manager != null) {
+            manager.cancel(NOTIFICATION_ID);
         }
     }
+
+
 
     public void release() {
         releaseEqualizer();

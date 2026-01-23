@@ -20,48 +20,56 @@
     <!-- ARTIST -->
     <!-- ===================== -->
 
+    <!-- ===================== -->
+    <!-- SEEK BAR -->
+    <!-- ===================== -->
+
     <ImageView
         android:id="@+id/imgAlbumArt"
         android:layout_width="260dp"
         android:layout_height="260dp"
-        android:layout_marginBottom="36dp"
         android:scaleType="centerCrop"
         android:src="@drawable/default_album_art"
-        app:layout_constraintBottom_toTopOf="@+id/tvCurrentSongTitle"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.189" />
 
     <TextView
         android:id="@+id/tvCurrentSongTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="48dp"
         android:text="No song playing"
         android:textColor="#ffffff"
         android:textSize="20sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/seekBar"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.497"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.833" />
+        app:layout_constraintTop_toBottomOf="@id/imgAlbumArt"
+        app:layout_constraintVertical_bias="0.081" />
 
     <TextView
         android:id="@+id/tvCurrentArtist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
         android:text=""
         android:textColor="#aaaaaa"
         android:textSize="14sp"
-        app:layout_constraintTop_toBottomOf="@id/tvCurrentSongTitle"
-        app:layout_constraintBottom_toTopOf="@id/seekBar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/tvCurrentSongTitle"
+        app:layout_constraintVertical_bias="0.098" />
 
     <!-- ===================== -->
-    <!-- SEEK BAR -->
+    <!-- PLAYER CONTROLS -->
     <!-- ===================== -->
     <SeekBar
         android:id="@+id/seekBar"
@@ -69,12 +77,12 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toTopOf="@id/playerControls"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/tvCurrentArtist"
+        app:layout_constraintVertical_bias="0.961" />
 
-    <!-- ===================== -->
-    <!-- PLAYER CONTROLS -->
-    <!-- ===================== -->
     <LinearLayout
         android:id="@+id/playerControls"
         android:layout_width="0dp"
@@ -86,28 +94,53 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
+        <!-- PLAY MODE -->
+
+        <!-- PREVIOUS -->
+
+        <ImageButton
             android:id="@+id/btnPrevious"
-            android:layout_width="64dp"
-            android:layout_height="54dp"
-            android:text="⏮"
-            android:textSize="22sp" />
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_previous"
+            app:tint="#ffffff"/>
 
-        <Button
+        <!-- PLAY / PAUSE -->
+        <ImageButton
             android:id="@+id/btnPlayPause"
-            android:layout_width="80dp"
-            android:layout_height="60dp"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:text="▶"
-            android:textSize="28sp" />
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_play"
+            app:tint="#ffffff"/>
 
-        <Button
+        <!-- NEXT -->
+        <ImageButton
             android:id="@+id/btnNext"
-            android:layout_width="64dp"
-            android:layout_height="54dp"
-            android:text="⏭"
-            android:textSize="22sp" />
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_next"
+            app:tint="#ffffff"/>
+
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnPlayMode"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_repeat_all"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.762"
+        app:tint="#ffffff" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
