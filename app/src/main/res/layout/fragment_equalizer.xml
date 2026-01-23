@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- TITLE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Equalizer"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="12dp" />
+
+        <!-- PRESET -->
+        <Spinner
+            android:id="@+id/spinnerPreset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp" />
+
+        <!-- BASS -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bass"
+            android:textColor="#aaaaaa" />
+
+        <SeekBar
+            android:id="@+id/seekBass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- MID -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mid"
+            android:textColor="#aaaaaa"
+            android:layout_marginTop="12dp" />
+
+        <SeekBar
+            android:id="@+id/seekMid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- TREBLE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Treble"
+            android:textColor="#aaaaaa"
+            android:layout_marginTop="12dp" />
+
+        <SeekBar
+            android:id="@+id/seekTreble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</ScrollView>

@@ -13,6 +13,13 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+
 public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView bottomNavigation;
@@ -34,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        requestNotificationPermission();
+
         bottomNavigation = findViewById(R.id.bottomNavigation);
 
         miniPlayer = findViewById(R.id.miniPlayer);
@@ -50,9 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
         bottomNavigation.setOnItemSelectedListener(item -> {
 
-            if (item.getItemId() == currentTabId) {
-                return true; // tidak reload fragment yang sama
-            }
+            if (item.getItemId() == currentTabId) return true;
 
             Fragment fragment;
             boolean forward;
@@ -63,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.navigation_library) {
                 fragment = new LibraryFragment();
                 forward = true;
+            } else if (item.getItemId() == R.id.navigation_equalizer) {
+                fragment = new EqualizerFragment();
+                forward = true;
             } else {
                 return false;
             }
@@ -71,7 +81,27 @@ public class MainActivity extends AppCompatActivity {
             loadFragment(fragment, forward);
             return true;
         });
+
     }
+
+    private void requestNotificationPermission() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        200
+                );
+            }
+        }
+    }
+
 
     // =========================
     // LOAD FRAGMENT (SATU-SATUNYA PINTU)

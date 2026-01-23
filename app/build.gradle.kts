@@ -34,14 +34,24 @@ android {
 }
 
 dependencies {
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.navigation:navigation-fragment:2.7.6")
-    implementation("androidx.navigation:navigation-ui:2.7.6")
-    implementation("com.google.android.material:material:1.11.0")
+
+    // === LEGACY MEDIA SESSION (PALING STABIL) ===
+    implementation("androidx.legacy:legacy-support-v4:1.0.0")
+
+    // === CORE ===
+    implementation("androidx.core:core:1.12.0")
+
+    // === ANDROIDX STANDARD ===
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+
+    // === NAVIGATION ===
+    implementation("androidx.navigation:navigation-fragment:2.7.6")
+    implementation("androidx.navigation:navigation-ui:2.7.6")
+
+    // === TEST ===
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
